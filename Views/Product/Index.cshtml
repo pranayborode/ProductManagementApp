@@ -1,0 +1,166 @@
+﻿@model ProductListViewModel
+
+<div class="container mt-5">
+    <h2>Product Management</h2>
+    <button id="createProductBtn" class="btn btn-success mb-3">Create New Product</button>
+
+ 
+    <div id="productListContainer">
+        @Html.Partial("_ProductListPartial", Model)
+    </div>
+
+
+    <div id="modalContainer"></div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+
+            loadProductList();
+
+          
+            function loadProductList(page = 1) {
+                $.ajax({
+                    url: '@Url.Action("Index", "Product")',
+                    type: 'GET',
+                    data: { page: page },
+                    dataType: 'html',
+                    success: function (data) {
+                        $('#productListContainer').html(data);
+                    }
+                });
+            }
+
+          
+            $(document).on('click', '.pagination .page-link', function (e) {
+                e.preventDefault();
+                var page = $(this).data('page');
+                if (page) {
+                    loadProductList(page);
+                }
+            });
+
+
+            
+            $('#createProductBtn').click(function () {
+                $.ajax({
+                    url: '@Url.Action("Create", "Product")',
+                    type: 'GET',
+                    success: function (data) {
+                        $('#modalContainer').html(data);
+                        $('#createProductModal').modal('show');
+                    }
+                });
+            });
+
+        
+            $(document).on('submit', '#createProductForm', function (e) {
+                e.preventDefault();
+
+                $.ajax({
+                    url: '@Url.Action("Create", "Product")',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    success: function (response) {
+                        if (response.success) {
+                            $('#createProductModal').modal('hide'); 
+                            loadProductList();
+                        } else {
+                            alert(response.message); 
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error:', error); 
+                    }
+                });
+            });
+
+          
+            $(document).on('click', '.btn-edit', function () {
+                var productId = $(this).data('id');
+                $.ajax({
+                    url: '@Url.Action("Edit", "Product")/' + productId,
+                    type: 'GET',
+                    success: function (data) {
+                        $('#modalContainer').html(data);
+                        $('#editProductModal').modal('show');
+                    }
+                });
+            });
+
+            
+            $(document).on('submit', '#editProductForm', function (e) {
+                e.preventDefault(); 
+
+                var formData = $(this).serialize();
+                var antiForgeryToken = $('input[name="__RequestVerificationToken"]').val();
+
+                $.ajax({
+                    url: '@Url.Action("Edit", "Product")',
+                    type: 'POST',
+                    data: formData,
+                    headers: {
+                        'RequestVerificationToken': antiForgeryToken
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            $('#editProductModal').modal('hide'); 
+                            loadProductList();
+                        } else {
+                            alert(response.message); 
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error:', error);
+                    }
+                });
+            });
+
+
+           
+            $(document).on('click', '.btn-delete', function () {
+                var productId = $(this).data('id');
+                $.ajax({
+                    url: '@Url.Action("Delete", "Product")/' + productId,
+                    type: 'GET',
+                    success: function (data) {
+                        $('#modalContainer').html(data);
+                        $('#deleteProductModal').modal('show');
+                    }
+                });
+            });
+
+
+        
+            $(document).on('submit', '#deleteProductForm', function (e) {
+                e.preventDefault();
+                var productId = $(this).find('input[name="id"]').val();
+
+                $.ajax({
+                    url: '@Url.Action("DeleteConfirmed", "Product")',
+                    type: 'POST',
+                    data: { id: productId },
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            $('#deleteProductModal').modal('hide');
+                            loadProductList();
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error:', error);
+                    }
+                });
+            });
+
+        });
+
+       
+    </script>
+}

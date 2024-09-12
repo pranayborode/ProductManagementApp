@@ -1,0 +1,153 @@
+﻿@model UserListViewModel
+
+<div class="container mt-5">
+    <h2>User Management</h2>
+    <button id="createUserBtn" class="btn btn-success mb-3">Create New User</button>
+
+    <div id="userListContainer">
+        @Html.Partial("_UserListPartial", Model)
+    </div>
+
+    <div id="modalContainer"></div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            loadUserList();
+
+            function loadUserList(page = 1) {
+                $.ajax({
+                    url: '@Url.Action("Index", "User")',
+                    type: 'GET',
+                    data: { page: page },
+                    dataType: 'html',
+                    success: function (data) {
+                        $('#userListContainer').html(data);
+                    }
+                });
+            }
+
+            $(document).on('click', '.pagination .page-link', function (e) {
+                e.preventDefault();
+                var page = $(this).data('page');
+                if (page) {
+                    loadUserList(page);
+                }
+            });
+
+            $('#createUserBtn').click(function () {
+                $.ajax({
+                    url: '@Url.Action("Create", "User")',
+                    type: 'GET',
+                    success: function (data) {
+                        $('#modalContainer').html(data);
+                        $('#createUserModal').modal('show');
+                    }
+                });
+            });
+
+            $(document).on('submit', '#createUserForm', function (e) {
+                e.preventDefault();
+
+                $.ajax({
+                    url: '@Url.Action("Create", "User")',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            $('#createUserModal').modal('hide');
+                            loadUserList();
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error:', error);
+                    }
+                });
+            });
+
+            $(document).on('click', '.btn-edit', function () {
+                var userId = $(this).data('id');
+                $.ajax({
+                    url: '@Url.Action("Edit", "User")/' + userId,
+                    type: 'GET',
+                    success: function (data) {
+                        $('#modalContainer').html(data);
+                        $('#editUserModal').modal('show');
+                    }
+                });
+            });
+
+            $(document).on('submit', '#editUserForm', function (e) {
+                e.preventDefault();
+
+                var formData = $(this).serialize();
+                var antiForgeryToken = $('input[name="__RequestVerificationToken"]').val();
+
+                $.ajax({
+                    url: '@Url.Action("Edit", "User")',
+                    type: 'POST',
+                    data: formData,
+                    headers: {
+                        'RequestVerificationToken': antiForgeryToken,
+                        'X-HTTP-Method-Override': 'PUT'
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            $('#editUserModal').modal('hide');
+                            loadUserList();
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error:', error);
+                    }
+                });
+            });
+
+            $(document).on('click', '.btn-delete', function () {
+                var userId = $(this).data('id');
+                $.ajax({
+                    url: '@Url.Action("Delete", "User")/' + userId,
+                    type: 'GET',
+                    success: function (data) {
+                        $('#modalContainer').html(data);
+                        $('#deleteUserModal').modal('show');
+                    }
+                });
+            });
+
+            $(document).on('submit', '#deleteUserForm', function (e) {
+                e.preventDefault();
+                var userId = $(this).find('input[name="id"]').val();
+
+                $.ajax({
+                    url: '@Url.Action("DeleteConfirmed", "User")',
+                    type: 'POST',
+                    data: { id: userId },
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            $('#deleteUserModal').modal('hide');
+                            loadUserList();
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error:', error);
+                    }
+                });
+            });
+        });
+    </script>
+}
